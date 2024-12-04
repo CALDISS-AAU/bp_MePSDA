@@ -1,0 +1,6 @@
+pandas
+numba==0.60.0
+bertopic
+spacy
+matplotlib
+seaborn

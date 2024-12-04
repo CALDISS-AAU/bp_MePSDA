@@ -1,0 +1,8 @@
+data
+logs
+Trash
+*.ipynb_checkpoints*
+*__pycache__*
+*mallet-2.0.8*
+output
+modelling
