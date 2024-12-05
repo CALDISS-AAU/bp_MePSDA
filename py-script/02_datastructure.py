@@ -7,6 +7,7 @@ import glob
 import numpy as np
 import pysbd
 from pysbd import Segmenter
+from tqdm import tqdm
 
 # DIRS AND PATHS
 project_dir = join('/work', 'Ccp-MePSDA')
@@ -22,6 +23,9 @@ output_dir = join(project_dir, 'output')
 model_dir = join(modelling_dir, 'models')
 
 data_transcribed = join(output_dir, 'transcribed')
+
+# enable tqdm for pandas
+tqdm.pandas()
 
 # Set the minimum character limit for segmenter/chunking function
 min_chars = 200
@@ -58,11 +62,10 @@ infomedia_df['text'] = infomedia_df['text'].apply(info_filter)
 infomedia_df['text'] = infomedia_df['text'].apply(org_article)
 infomedia_df['text'] = infomedia_df['text'].apply(thumbnail)
 infomedia_df['text'] = infomedia_df['text'].apply(article_no_show)
+infomedia_df['text'] = infomedia_df['text'].apply(lambda text: text.replace('«', '').replace('»', ''))
 # converting to intergers
 infomedia_df['title'] = infomedia_df['title'].astype("int64")
 
-# Applying new line function
-infomedia_df['text'] = infomedia_df['text'].apply(remove_line)
 # converting to string
 infomedia_df['text'] = infomedia_df['text'].astype('str')
 infomedia_df['source'] = 'infomedia'
@@ -94,7 +97,8 @@ def split_text_into_chunks(text, min_chars):
 
 
 # Apply the function to the text column and explode the result
-infomedia_df['chunked'] = infomedia_df['text'].apply(lambda x: split_text_into_chunks(x, min_chars))
+print('processing infomedia...')
+infomedia_df['chunked'] = infomedia_df['text'].progress_apply(lambda x: split_text_into_chunks(x, min_chars))
 infomedia_df = infomedia_df.explode("chunked").reset_index(drop=True)
 
 # create chunk index
@@ -109,6 +113,7 @@ infomedia_df.to_csv("/work/Ccp-MePSDA/output/infomedia/df_infomedia.csv", index=
 # ________________________ transcribed files ________________________
 
 # Masterclass files
+print('processing masterclass...')
 
 # Directory path containing the interview files
 masterclass_files = glob.glob('/work/Ccp-MePSDA/output/transcript/masterclass_transcribed/*.csv')
@@ -119,30 +124,33 @@ dataframes = []
 # Iterate over each file and read it, skipping the first row (header)
 for filename in masterclass_files:
     df = pd.read_csv(filename)
-    df['title'] =  filename.split('/')[-1] # creaing title based on filename
-    df['source'] = 'masterclass' # Type of interview
-    dataframes.append(df)
+    df_concat = pd.DataFrame({
+        'full_text': [df['text'].str.cat(sep='. ')],
+        'title': [os.path.basename(filename)], # creaing title based on filename
+        'source': ['masterclass'] # Type of interview
+    })
+    
+    dataframes.append(df_concat)
 
 # Concatenate all dataframes
 masterclass_df = pd.concat(dataframes, ignore_index=True)
 
 # Converting to string
-masterclass_df['text'] = masterclass_df['text'].astype('str')
+masterclass_df['full_text'] = masterclass_df['full_text'].astype('str')
 
 # Apply the function to the text column and explode the result
-masterclass_df['chunked'] = masterclass_df['text'].apply(lambda x: split_text_into_chunks(x, min_chars))
+masterclass_df['chunked'] = masterclass_df['full_text'].progress_apply(lambda x: split_text_into_chunks(x, min_chars))
 masterclass_df = masterclass_df.explode("chunked").reset_index(drop=True)
 
 # create chunk index
 masterclass_df['chunk_index'] = masterclass_df.groupby('title').cumcount()
 
-# dropping 
-masterclass_df.drop(columns=['temperature', 'avg_logprob', 'words'], inplace=True)
 # To CSV
 masterclass_df.to_csv('/work/Ccp-MePSDA/output/collected_data/df_masterclass.csv', index=False)
 
 
 # misc files 
+print('processing misc...')
 
 misc_files = glob.glob('/work/Ccp-MePSDA/output/transcript/miscellaneous_transcribed/*.csv')
 # empty list for files
@@ -150,53 +158,61 @@ dataframes = []
 # For looping files
 for filename in misc_files:
     df = pd.read_csv(filename)
-    df['title'] =  filename.split('/')[-1] # Creating file name
-    df['source'] = 'misc'
-    dataframes.append(df)
+    df_concat = pd.DataFrame({
+        'full_text': [df['text'].str.cat(sep='. ')],
+        'title': [os.path.basename(filename)], # creaing title based on filename
+        'source': ['masterclass'] # Type of interview
+    })
+
+    dataframes.append(df_concat)
+
 # concatenate
 misc_df = pd.concat(dataframes, ignore_index=True)
 
 
 # Apply the function to the text column and explode the result
-misc_df['chunked'] = misc_df['text'].apply(lambda x: split_text_into_chunks(x, min_chars))
+misc_df['chunked'] = misc_df['full_text'].progress_apply(lambda x: split_text_into_chunks(x, min_chars))
 misc_df = misc_df.explode("chunked").reset_index(drop=True)
 # chunk index
 misc_df['chunk_index'] = misc_df.groupby('title').cumcount()
-# dropping columns
-misc_df.drop(columns=['temperature', 'avg_logprob', 'words', 'id'], inplace=True)
 
 # To CSV
 misc_df.to_csv('/work/Ccp-MePSDA/output/collected_data/df_misc.csv', index=False)
 
 
 # interview files
+print('processing interviews...')
+
 interview_files = glob.glob('/work/Ccp-MePSDA/output/transcript/interviews_transcribed/*.csv')
 
 # Empty list for files
-dataframe = []
+dataframes = []
 # for loop collecting the csv files in path
 for filename in interview_files:
     df = pd.read_csv(filename)
-    df['title'] =  filename.split('/')[-1] # Creating file name
-    df['source'] = 'interviews' 
-    dataframe.append(df)
+    df_concat = pd.DataFrame({
+        'full_text': [df['text'].str.cat(sep='. ')],
+        'title': [os.path.basename(filename)], # creaing title based on filename
+        'source': ['masterclass'] # Type of interview
+    })
+    
+    dataframes.append(df_concat)
 # Concatenating interview files
-interview_df = pd.concat(dataframe, ignore_index=True)
+interview_df = pd.concat(dataframes, ignore_index=True)
 
 # Apply the segmenter function to the text column and explode the result
-interview_df['chunked'] = interview_df['text'].apply(lambda x: split_text_into_chunks(x, min_chars))
+interview_df['chunked'] = interview_df['full_text'].progress_apply(lambda x: split_text_into_chunks(x, min_chars))
 interview_df = interview_df.explode("chunked").reset_index(drop=True)
 
 interview_df['chunk_index'] = interview_df.groupby('title').cumcount()
-
-# Dropping columns
-interview_df.drop(columns=['temperature', 'avg_logprob', 'words', 'id'], inplace=True)
 
 # Saving to csv
 interview_df.to_csv('/work/Ccp-MePSDA/output/collected_data/df_interview.csv', index=False)
 
 
 # ________________________ Merging files ________________________
+print('merging...')
+
 # selecting all frames created
 frames = [masterclass_df, interview_df, misc_df, infomedia_df]
 
@@ -216,4 +232,7 @@ master_df['chunked'] = master_df['chunked'].replace(np.nan, '')
 #master_df = master_df.reset_index()
 
 # Saving to output folder
+print('saving to csv...')
 master_df.to_csv('/work/Ccp-MePSDA/output/collected_data/mepsda_df.csv', index=False)
+
+print('Done!')

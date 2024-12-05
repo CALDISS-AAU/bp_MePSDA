@@ -4,3 +4,13 @@ bertopic
 spacy
 matplotlib
 seaborn
+tqdm
+pysbd
+scikit-learn
+sentence-transformers
+numpy
+umap
+hdbscan
+transformers
+openpyxl
+datamapplot
