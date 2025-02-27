@@ -13,4 +13,4 @@ umap
 hdbscan
 transformers
 openpyxl
-datamapplot
+topic-wizard
