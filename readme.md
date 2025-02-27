@@ -8,14 +8,14 @@ The repository consists of two pipelines each with several scripts: one for crea
 All scripts are written in python.
 
 #### Summarizing the pipeline
-:::info
-1. Collect1ing Youtube videos
+
+1. Collecting Youtube videos
 2. Creating data structure
 3. Calculating word-embeddings using sentence-transformers
 4. Matching embedding space with keywords divided into 3 themes
 5. Training BERTopic model
 6. Validating model output and creating visualizations based on results
-:::
+
 
 #### Python packages:
 pandas: Structuring and formatting data.
