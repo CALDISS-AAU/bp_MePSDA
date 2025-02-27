@@ -1,3 +1,4 @@
+# 
 import os
 from os.path import join
 import numpy as np
@@ -5,7 +6,7 @@ import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
 
-# dirs and paths
+# Dirs and paths
 output_dir = '/work/Ccp-MePSDA/output/keyword_search'
 
 # Loading data
@@ -17,7 +18,7 @@ mepsda_df['chunked'] = mepsda_df['chunked'].astype(str)
 # Loading calculated embeddings
 risvig_embeddings = np.load('/work/Ccp-MePSDA/modelling/embeddings/embeddings.npy')
 
-## add to df
+## Add to df
 mepsda_df['chunk_embedding'] = list(risvig_embeddings)
 
 # Load sentence transformer
@@ -95,30 +96,41 @@ mepsda_df['theme1_score'] = mepsda_df['chunked'].apply(lambda text: score_text(t
 mepsda_df['theme2_score'] = mepsda_df['chunked'].apply(lambda text: score_text(text, keywords.get('theme2')))
 mepsda_df['theme3_score'] = mepsda_df['chunked'].apply(lambda text: score_text(text, keywords.get('theme3')))
 
-# top 5 representation chunks
+# Top 5 representation chunks
 theme1_top = mepsda_df.sort_values('theme1_score', ascending=False)['chunked'].tolist()[:5]
 theme2_top = mepsda_df.sort_values('theme2_score', ascending=False)['chunked'].tolist()[:5]
 theme3_top = mepsda_df.sort_values('theme3_score', ascending=False)['chunked'].tolist()[:5]
 
-# theme embeddings
+# Theme embeddings
 theme1_embedding = calculate_mean_embedding(theme1_top)
 theme2_embedding = calculate_mean_embedding(theme2_top)
 theme3_embedding = calculate_mean_embedding(theme3_top)
 
-# theme similarity
+# Theme similarity
 mepsda_df['theme1_similarity'] = mepsda_df['chunk_embedding'].apply(lambda emb: cosine_similarity([emb], [theme1_embedding])[0][0])
 mepsda_df['theme2_similarity'] = mepsda_df['chunk_embedding'].apply(lambda emb: cosine_similarity([emb], [theme2_embedding])[0][0])
 mepsda_df['theme3_similarity'] = mepsda_df['chunk_embedding'].apply(lambda emb: cosine_similarity([emb], [theme3_embedding])[0][0])
 
-# output df with embeddings
+# Output df with embeddings
 mepsda_df.to_csv(join(output_dir, 'mepsda_chunk_keywordsimilarity.csv'), index = False)
 
-# top chunks
+# Top chunks
 theme1_top = mepsda_df.sort_values('theme1_similarity', ascending = False).reset_index(drop = True).loc[:500, ['source', 'title', 'chunk_index', 'chunked', 'theme1_score', 'theme1_similarity']].rename(columns = {'chunked': 'text'})
 theme2_top = mepsda_df.sort_values('theme2_similarity', ascending = False).reset_index(drop = True).loc[:500, ['source', 'title', 'chunk_index', 'chunked', 'theme2_score', 'theme2_similarity']].rename(columns = {'chunked': 'text'})
 theme3_top = mepsda_df.sort_values('theme3_similarity', ascending = False).reset_index(drop = True).loc[:500, ['source', 'title', 'chunk_index', 'chunked', 'theme3_score', 'theme3_similarity']].rename(columns = {'chunked': 'text'})
 
-# export
+# Export
 theme1_top.to_excel(join(output_dir, 'theme1_texts_top500.xlsx'), index = False)
 theme2_top.to_excel(join(output_dir, 'theme2_texts_top500.xlsx'), index = False)
 theme3_top.to_excel(join(output_dir, 'theme3_texts_top500.xlsx'), index = False)
+
+# Extracting each topics representative sentences and separating into excel files
+mepsda_topic_representative = pd.read_excel('/work/Ccp-MePSDA/output/topics/mepsda_topic_representative-texts.xlsx')
+
+df_dict = {g: d for g, d in mepsda_topic_representative.groupby('Topic')}
+df_dict = {f'df{i}': d for i, (g, d) in enumerate(mepsda_topic_representative.groupby('Topic'))}
+
+output_path='/work/Ccp-MePSDA/output/topics/separated_topic_df'
+for name, df, in df_dict.items():
+    file_path = os.path.join(output_path, f"{name}.csv")
+    df.to_csv(file_path)

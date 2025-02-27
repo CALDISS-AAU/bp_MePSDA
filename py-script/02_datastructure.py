@@ -1,3 +1,4 @@
+# Packages
 import pandas as pd
 import re
 import os
@@ -16,12 +17,12 @@ modelling_dir = join(project_dir, 'modelling')
 modules_dir = join(project_dir, 'modules')
 sys.path.append(modules_dir)
 
-from mepsda_funs import * # indlæser alle funktioer i mepsda_funs
+from mepsda_funs import * # Reading defined functions
 
 logs_dir = join(modelling_dir, 'logs')
 output_dir = join(project_dir, 'output')
 model_dir = join(modelling_dir, 'models')
-
+# Defining path for transcribed data
 data_transcribed = join(output_dir, 'transcribed')
 
 # enable tqdm for pandas
@@ -51,27 +52,33 @@ for filename in os.listdir(path):
 # Convert to pandas dataframe
 infomedia_df = pd.DataFrame(data)
 
-# preprocess stuff
+# Preprocess
 infomedia_df = infomedia_df.sort_values(by='Title', ascending=True, ignore_index=True)
 infomedia_df.rename(columns={'Title':'title', 'Content': 'text'}, inplace=True)
-# applying title function
+# Applying title function
 infomedia_df['title'] = infomedia_df['title'].apply(correct_title)
-# applying filter functions
+# Applying filter functions
 infomedia_df['text'] = infomedia_df['text'].apply(info)
 infomedia_df['text'] = infomedia_df['text'].apply(info_filter)
 infomedia_df['text'] = infomedia_df['text'].apply(org_article)
 infomedia_df['text'] = infomedia_df['text'].apply(thumbnail)
 infomedia_df['text'] = infomedia_df['text'].apply(article_no_show)
 infomedia_df['text'] = infomedia_df['text'].apply(lambda text: text.replace('«', '').replace('»', ''))
-# converting to intergers
+# Converting to intergers
 infomedia_df['title'] = infomedia_df['title'].astype("int64")
 
-# converting to string
+# Converting txt to strings
 infomedia_df['text'] = infomedia_df['text'].astype('str')
+# Defining source for dataframe
 infomedia_df['source'] = 'infomedia'
 
 # Segmentation function
 def split_text_into_chunks(text, min_chars):
+    '''
+    Splits text column into 200 char long chunks for better handling for model.
+    Takes natural stops into account.
+    Requires list or dataframe column.
+    '''
     from pysbd import Segmenter
     segmenter = Segmenter(language="da", clean=True)
     sentences = segmenter.segment(text)
@@ -107,7 +114,7 @@ infomedia_df['chunk_index'] = infomedia_df.groupby('title').cumcount()
 infomedia_df['chunked'] = infomedia_df['chunked'].astype(str)
 
 # Saving as csv
-infomedia_df.to_csv("/work/Ccp-MePSDA/output/infomedia/df_infomedia.csv", index=False)
+infomedia_df.to_csv("/work/Ccp-MePSDA/data/infomedia/df_infomedia.csv", index=False)
 
 
 # ________________________ transcribed files ________________________
@@ -116,7 +123,7 @@ infomedia_df.to_csv("/work/Ccp-MePSDA/output/infomedia/df_infomedia.csv", index=
 print('processing masterclass...')
 
 # Directory path containing the interview files
-masterclass_files = glob.glob('/work/Ccp-MePSDA/output/transcript/masterclass_transcribed/*.csv')
+masterclass_files = glob.glob('/work/Ccp-MePSDA/data/transcript/masterclass_transcribed/*.csv')
 
 # Create empty list
 dataframes = []
@@ -146,14 +153,14 @@ masterclass_df = masterclass_df.explode("chunked").reset_index(drop=True)
 masterclass_df['chunk_index'] = masterclass_df.groupby('title').cumcount()
 
 # To CSV
-masterclass_df.to_csv('/work/Ccp-MePSDA/output/collected_data/df_masterclass.csv', index=False)
+masterclass_df.to_csv('/work/Ccp-MePSDA/data/collected_data/df_masterclass.csv', index=False)
 
 
-# misc files 
+# Misc files 
 print('processing misc...')
 
-misc_files = glob.glob('/work/Ccp-MePSDA/output/transcript/miscellaneous_transcribed/*.csv')
-# empty list for files
+misc_files = glob.glob('/work/Ccp-MePSDA/data/transcript/miscellaneous_transcribed/*.csv')
+# Empty list for files
 dataframes = []
 # For looping files
 for filename in misc_files:
@@ -166,7 +173,7 @@ for filename in misc_files:
 
     dataframes.append(df_concat)
 
-# concatenate
+# Concatenate frames
 misc_df = pd.concat(dataframes, ignore_index=True)
 
 
@@ -177,13 +184,13 @@ misc_df = misc_df.explode("chunked").reset_index(drop=True)
 misc_df['chunk_index'] = misc_df.groupby('title').cumcount()
 
 # To CSV
-misc_df.to_csv('/work/Ccp-MePSDA/output/collected_data/df_misc.csv', index=False)
+misc_df.to_csv('/work/Ccp-MePSDA/data/collected_data/df_misc.csv', index=False)
 
 
-# interview files
+# Interview files
 print('processing interviews...')
 
-interview_files = glob.glob('/work/Ccp-MePSDA/output/transcript/interviews_transcribed/*.csv')
+interview_files = glob.glob('/work/Ccp-MePSDA/data/transcript/interviews_transcribed/*.csv')
 
 # Empty list for files
 dataframes = []
@@ -192,7 +199,7 @@ for filename in interview_files:
     df = pd.read_csv(filename)
     df_concat = pd.DataFrame({
         'full_text': [df['text'].str.cat(sep='. ')],
-        'title': [os.path.basename(filename)], # creaing title based on filename
+        'title': [os.path.basename(filename)], # Creaing title based on filename
         'source': ['masterclass'] # Type of interview
     })
     
@@ -207,32 +214,26 @@ interview_df = interview_df.explode("chunked").reset_index(drop=True)
 interview_df['chunk_index'] = interview_df.groupby('title').cumcount()
 
 # Saving to csv
-interview_df.to_csv('/work/Ccp-MePSDA/output/collected_data/df_interview.csv', index=False)
+interview_df.to_csv('/work/Ccp-MePSDA/data/collected_data/df_interview.csv', index=False)
 
 
 # ________________________ Merging files ________________________
 print('merging...')
 
-# selecting all frames created
+# Selecting all frames created
 frames = [masterclass_df, interview_df, misc_df, infomedia_df]
 
-# concatenating the frames into one
+# Concatenating the frames into one
 master_df = pd.concat(frames, ignore_index=True)
 
-# aggregating each text under the same title
-#master_df = master_df.groupby(['title', 'source']).agg({'chunked':'\n'.join})
-
-# making content as strings
+# Making content as strings
 master_df['chunked'] = master_df['chunked'].astype(str)
 
 # Replace NaN with empty string or some placeholder
 master_df['chunked'] = master_df['chunked'].replace(np.nan, '')
 
-# Resetting index to flatten the grouped structure
-#master_df = master_df.reset_index()
-
 # Saving to output folder
 print('saving to csv...')
-master_df.to_csv('/work/Ccp-MePSDA/output/collected_data/mepsda_df.csv', index=False)
+master_df.to_csv('/work/Ccp-MePSDA/data/collected_data/mepsda_df.csv', index=False)
 
 print('Done!')
