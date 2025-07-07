@@ -1,7 +1,9 @@
 # MePSDA
 
 ## Project description
-This project focuses on training a BERTopic model based on collected data from news articles and transcribed data from YouTube. The data consists of interviews, recorded videos and radio interviews from the Danish film director Jonas Risvig. The primary sources are YouTube and the Danish news article database Infomedia. The main focus was to analyze and interpret, via computational methods, Jonas Risvigs attitudes towards social issues of gender, youth, casting and filmmaking targeting a young audience.
+This repository contains all the code used to create the analysis for the research article: Hansen, K. T., Appel, M. K., & Kjelmann, K. G. (2025). Media production studies for the digital age: AI-driven analyses of Jonas Risvig’s Danish young adult content. Convergence, 0(0). https://doi.org/10.1177/13548565251358019
+
+The project focuses on training a BERTopic model based on collected data from news articles and transcribed data from YouTube. The data consists of interviews, recorded videos and radio interviews from the Danish film director Jonas Risvig. The primary sources are YouTube and the Danish news article database Infomedia. The main focus was to analyze and interpret, via computational methods, Jonas Risvigs attitudes towards social issues of gender, youth, casting and filmmaking targeting a young audience.
 
 The repository consists of two pipelines each with several scripts: one for creating word-embeddings of the collected data and comparing it with a sample of wildcard words proposed by the researcher. Second pipeline utilizes said word-embeddings to build and train a BERTopic model to analyze and interpret the generated topics of the full dataset.
 
