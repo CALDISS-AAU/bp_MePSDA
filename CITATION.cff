@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below"
+authors:
+- family-names: "Appel"
+  given-names: "Matias"
+  orcid: "https://orcid.org/0009-0004-7380-2191"
+- family-names: "Kjelmann"
+  given-names: "Kristian"
+  orcid: "https://orcid.org/0000-0001-7994-735X"
+title: "Media Production Studies for the Digital Age"
+date-released: 2025-02-27
+url: "https://github.com/CALDISS-AAU/bp_MePSDA"
